@@ -4,9 +4,11 @@ import { NodeGridContainer } from "@/components/sections/NodeGrid";
 import { NodeCompactContainer } from "@/components/sections/NodeCompact";
 import { NodeTable } from "@/components/sections/NodeTable";
 import { AppleHero } from "@/components/sections/AppleHero";
+import { AppleDashboardModules } from "@/components/sections/AppleDashboardModules";
 import Loading from "@/components/loading";
 import type { NodeData } from "@/types/node";
 import { useNodeData } from "@/contexts/NodeDataContext";
+import { useLiveData } from "@/contexts/LiveDataContext";
 import { useAppConfig } from "@/config";
 import { useTheme } from "@/hooks/useTheme";
 import {
@@ -44,6 +46,7 @@ const HomePage: React.FC<HomePageProps> = ({
   const { viewMode, statusCardsVisibility, setStatusCardsVisibility } =
     useTheme();
   const { loading, error, refreshNodes } = useNodeData();
+  const { liveData } = useLiveData();
   const {
     enableGroupedBar,
     enableStatsBar,
@@ -53,12 +56,23 @@ const HomePage: React.FC<HomePageProps> = ({
     selectTrafficProgressStyle,
     isShowStatsInHeader,
     mergeGroupsWithStats,
+    enableAppleDashboardModules,
+    enableWorldMap,
+    enableRemainingValueCalculator,
+    enableProCustomizationPanel,
   } = useAppConfig();
   const { t } = useLocale();
 
   const isMobile = useIsMobile();
 
   const hasSearchTerm = searchTerm.trim().length > 0;
+
+  const handleLiveTelemetryClick = () => {
+    void refreshNodes();
+    document
+      .getElementById("apple-dashboard-modules")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   if (loading) {
     return <Loading text={t("homePage.loadingData")} />;
@@ -101,7 +115,18 @@ const HomePage: React.FC<HomePageProps> = ({
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         title={titleText}
+        onLiveTelemetryClick={handleLiveTelemetryClick}
       />
+
+      {enableAppleDashboardModules && (
+        <AppleDashboardModules
+          nodes={filteredNodes}
+          liveData={liveData}
+          enableWorldMap={enableWorldMap}
+          enableRemainingValueCalculator={enableRemainingValueCalculator}
+          enableProCustomizationPanel={enableProCustomizationPanel}
+        />
+      )}
 
       {enableStatsBar && (!isShowStatsInHeader || isMobile) && (
         <StatsBar

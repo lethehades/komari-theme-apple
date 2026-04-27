@@ -13,6 +13,7 @@ interface AppleHeroProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   title?: string;
+  onLiveTelemetryClick?: () => void;
 }
 
 const formatPercent = (value: number) => `${Math.max(0, Math.min(100, value)).toFixed(0)}%`;
@@ -26,6 +27,7 @@ export function AppleHero({
   searchTerm,
   setSearchTerm,
   title,
+  onLiveTelemetryClick,
 }: AppleHeroProps) {
   const onlineRatio = stats.totalCount
     ? (stats.onlineCount / stats.totalCount) * 100
@@ -94,10 +96,10 @@ export function AppleHero({
               className="apple-search__input"
             />
           </label>
-          <div className="apple-live-pill">
+          <button className="apple-live-pill" type="button" onClick={onLiveTelemetryClick}>
             <Activity className="size-4" />
             <span>{stats.onlineCount > 0 ? "Live telemetry" : "Waiting for data"}</span>
-          </div>
+          </button>
         </div>
       </div>
 

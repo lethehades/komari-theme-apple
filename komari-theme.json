@@ -2,7 +2,7 @@
   "name": "Komari Theme Apple",
   "short": "apple",
   "description": "An Apple official website inspired Komari theme with refined glass panels, spacious layout, live telemetry cards, grouping, traffic and instance detail modules.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "HM Y & Xiaoyan, based on PurCarte by Montia37",
   "url": "https://github.com/lethehades/komari-theme-apple",
   "preview": "preview.png",
@@ -359,6 +359,52 @@
         "type": "number",
         "default": 0,
         "help": "设置延迟图表的最大渲染点数来优化图表渲染，0 表示不限制，推荐值为 2000 或更小的值"
+      },
+      {
+        "name": "Apple Pro 模块",
+        "type": "title"
+      },
+      {
+        "key": "enableAppleDashboardModules",
+        "name": "启用 Apple 仪表盘增强模块",
+        "type": "switch",
+        "default": true,
+        "help": "启用后在首页展示 Apple 风格的世界地图、剩余价值和 Pro 控制模块。"
+      },
+      {
+        "key": "enableWorldMap",
+        "name": "启用仪表盘世界地图视图",
+        "type": "switch",
+        "default": true,
+        "help": "展示全球节点分布、区域在线状态和悬停详情。"
+      },
+      {
+        "key": "enableRemainingValueCalculator",
+        "name": "启用剩余价值计算器",
+        "type": "switch",
+        "default": true,
+        "help": "根据节点价格、账期、到期时间估算剩余价值。"
+      },
+      {
+        "key": "enableProCustomizationPanel",
+        "name": "启用 Pro 风格自定义提示面板",
+        "type": "switch",
+        "default": true,
+        "help": "在首页展示已接入后端主题配置的 Apple Pro 风格模块提示。"
+      },
+      {
+        "key": "enableCompactNetworkGauge",
+        "name": "启用紧凑型网络速度仪表",
+        "type": "switch",
+        "default": true,
+        "help": "在服务器状态卡片中显示上传/下载实时速度胶囊。"
+      },
+      {
+        "key": "enableNodeHistoryBars",
+        "name": "启用节点历史条形图",
+        "type": "switch",
+        "default": true,
+        "help": "在服务器状态卡片中显示 24 小时延迟和丢包历史条形图。"
       },
       {
         "name": "UI 自定义",

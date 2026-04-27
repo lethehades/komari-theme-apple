@@ -57,9 +57,28 @@ export const useNodeListCommons = (searchTerm: string) => {
         (node: NodeData & { stats?: any }) =>
           selectedGroup === t("group.all") || node.group === selectedGroup
       )
-      .filter((node: NodeData) =>
-        node.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      .filter((node: NodeData & { stats?: any }) => {
+        const term = searchTerm.trim().toLowerCase();
+        if (!term) return true;
+
+        const searchable = [
+          node.name,
+          node.region,
+          node.group,
+          node.os,
+          node.arch,
+          node.cpu_name,
+          node.virtualization,
+          node.tags,
+          node.public_remark,
+          node.stats?.online ? "online 在线" : "offline 离线",
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return searchable.includes(term);
+      });
 
     if (isOfflineNodesBehind || sortKey) {
       nodes.sort((a, b) => {

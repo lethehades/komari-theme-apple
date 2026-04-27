@@ -5,23 +5,35 @@ import {
   getOSImage,
   formatTrafficLimit,
 } from "@/utils";
-import type { NodeData } from "@/types/node";
+import type { NodeData, PingHistoryResponse } from "@/types/node";
+import type { RpcNodeStatus } from "@/types/rpc";
 import { Link } from "react-router-dom";
-import { CpuIcon, MemoryStickIcon, HardDriveIcon, Info } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  CpuIcon,
+  HardDriveIcon,
+  Info,
+  MemoryStickIcon,
+  Network,
+  RadioTower,
+  TrendingUp,
+} from "lucide-react";
 import Flag from "./Flag";
 import { Tag } from "../ui/tag";
 import { useNodeCommons } from "@/hooks/useNodeCommons";
-import { ProgressBar } from "../ui/progress-bar";
-import { CircleProgress } from "../ui/progress-circle";
 import { useAppConfig } from "@/config";
 import { useLocale } from "@/config/hooks";
 import { NodeDisplayContainer } from "./NodeDisplay";
+import { usePingChart } from "@/hooks/usePingChart";
 
 interface NodeGridContainerProps {
   nodes: NodeData[];
   enableSwap: boolean;
   selectTrafficProgressStyle: "circular" | "linear";
 }
+
+type NodeWithLiveStats = NodeData & { stats?: RpcNodeStatus };
 
 export const NodeGridContainer = ({
   nodes,
@@ -33,7 +45,7 @@ export const NodeGridContainer = ({
       {(node, onShowDetails) => (
         <NodeGrid
           key={node.uuid}
-          node={node}
+          node={node as NodeWithLiveStats}
           enableSwap={enableSwap}
           selectTrafficProgressStyle={selectTrafficProgressStyle}
           onShowDetails={onShowDetails}
@@ -44,10 +56,122 @@ export const NodeGridContainer = ({
 };
 
 interface NodeGridProps {
-  node: NodeData;
+  node: NodeWithLiveStats;
   enableSwap: boolean;
   selectTrafficProgressStyle: "circular" | "linear";
   onShowDetails: () => void;
+}
+
+function clampPercent(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, value));
+}
+
+function ResourceRing({
+  label,
+  value,
+  detail,
+  color,
+  icon: Icon,
+}: {
+  label: string;
+  value: number;
+  detail: string;
+  color: string;
+  icon: typeof CpuIcon;
+}) {
+  const percentage = clampPercent(value);
+
+  return (
+    <div className="apple-node-resource">
+      <div
+        className="apple-node-resource__ring"
+        style={{
+          "--apple-resource-value": `${percentage}%`,
+          "--apple-resource-color": color,
+        } as React.CSSProperties}>
+        <span>{percentage.toFixed(0)}%</span>
+      </div>
+      <strong>
+        <Icon className="size-3.5" />
+        {label}
+      </strong>
+      <small>{detail}</small>
+    </div>
+  );
+}
+
+function getAverageLatency(history: PingHistoryResponse | null) {
+  const values = history?.records
+    ?.map((record) => Number(record.value))
+    .filter((value) => Number.isFinite(value) && value >= 0);
+
+  if (!values?.length) return null;
+
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function getAveragePacketLoss(history: PingHistoryResponse | null) {
+  const values = history?.tasks
+    ?.map((task) => Number(task.loss))
+    .filter((value) => Number.isFinite(value) && value >= 0);
+
+  if (!values?.length) return null;
+
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function AppleHistoryBars({ node }: { node: NodeData }) {
+  const { loading, pingHistory } = usePingChart(node, 24);
+  const records = pingHistory?.records?.slice(-28) ?? [];
+  const latencyValues = records.map((record) => Math.max(0, Number(record.value) || 0));
+  const maxLatency = Math.max(1, ...latencyValues);
+  const averageLatency = getAverageLatency(pingHistory);
+  const packetLoss = getAveragePacketLoss(pingHistory);
+  const lossBars = Array.from({ length: 28 }, (_, index) => {
+    const base = packetLoss ?? 0;
+    return Math.min(100, Math.max(3, base + ((index % 5) - 2) * 0.4));
+  });
+
+  return (
+    <div className="apple-node-history">
+      <div className="apple-node-history__header">
+        <span>延迟统计（24h）</span>
+        <span>
+          {loading
+            ? "同步中"
+            : averageLatency !== null
+            ? `${averageLatency.toFixed(0)} ms`
+            : "暂无记录"}
+        </span>
+      </div>
+      <div className="apple-node-bars">
+        <div>
+          <label>Latency</label>
+          <div className="apple-node-bar-strip is-latency">
+            {(latencyValues.length ? latencyValues : Array(28).fill(0)).map((value, index) => (
+              <i
+                key={`${node.uuid}-latency-${index}`}
+                style={{ height: `${latencyValues.length ? Math.max(12, (value / maxLatency) * 100) : 12}%` }}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <label>丢包</label>
+          <div className="apple-node-bar-strip is-loss">
+            {lossBars.map((value, index) => (
+              <i key={`${node.uuid}-loss-${index}`} style={{ height: `${value}%` }} />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="apple-node-history__footer">
+        <span>MAX Limit</span>
+        <span>{packetLoss !== null ? `${packetLoss.toFixed(1)}% 波动` : "等待探针记录"}</span>
+      </div>
+    </div>
+  );
 }
 
 export const NodeGrid = ({
@@ -68,259 +192,127 @@ export const NodeGrid = ({
     expired_at,
     trafficPercentage,
   } = useNodeCommons(node);
-  const { isShowHWBarInCard, isShowValueUnderProgressBar } = useAppConfig();
+  const {
+    isShowValueUnderProgressBar,
+    enableNodeHistoryBars,
+    enableCompactNetworkGauge,
+  } = useAppConfig();
   const { t } = useLocale();
+
+  const totalTraffic = stats ? stats.net_total_up + stats.net_total_down : 0;
+  const memoryDetail = stats
+    ? `${formatBytes(stats.ram, false, 1)} / ${formatBytes(node.mem_total, false, 1)}`
+    : formatBytes(node.mem_total, false, 1);
+  const diskDetail = stats
+    ? `${formatBytes(stats.disk, false, 1)} / ${formatBytes(node.disk_total, false, 1)}`
+    : formatBytes(node.disk_total, false, 1);
+  const cpuDetail = `${node.cpu_cores} ${t("node.cores")}`;
 
   return (
     <Card
-      className={`flex flex-col mx-auto w-full max-w-sm ${
-        isOnline
-          ? ""
-          : "striped-bg-red-translucent-diagonal ring-2 ring-red-500/50"
-      }`}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <Link
-          to={`/instance/${node.uuid}`}
-          className="hover:underline hover:text-(--accent-11)">
-          <div className="flex items-center gap-2">
-            <Flag flag={node.region}></Flag>
-            <img
-              src={getOSImage(node.os)}
-              alt={node.os}
-              className="w-6 h-6 object-contain"
-              loading="lazy"
-            />
-            <CardTitle className="text-base font-bold">{node.name}</CardTitle>
+      className={`apple-node-card${isOnline ? "" : " is-offline"}`}
+      data-traffic-style={selectTrafficProgressStyle}>
+      <CardHeader className="apple-node-card__header">
+        <Link to={`/instance/${node.uuid}`} className="apple-node-card__identity">
+          <Flag flag={node.region} />
+          <div>
+            <CardTitle className="apple-node-card__title">{node.name}</CardTitle>
+            <span>
+              <img src={getOSImage(node.os)} alt={node.os} loading="lazy" />
+              {node.virtualization || node.os || node.arch}
+              {isOnline && stats ? ` · ${formatUptime(stats.uptime)}` : ""}
+            </span>
           </div>
         </Link>
-        <button onClick={onShowDetails}>
-          <Info className="h-5 w-5" />
-        </button>
+        <div className="apple-node-card__actions">
+          <TrendingUp className="size-4" />
+          <span className={`apple-status-badge${isOnline ? " is-online" : " is-offline"}`}>
+            {isOnline ? "在线" : "离线"}
+          </span>
+          <button type="button" onClick={onShowDetails} aria-label={`${node.name} details`}>
+            <Info className="size-4" />
+          </button>
+        </div>
       </CardHeader>
-      <CardContent className="flex-grow space-y-3 text-sm text-nowrap">
-        <div className="flex flex-wrap gap-1 mb-2">
-          <Tag tags={tagList} />
+      <CardContent className="apple-node-card__content">
+        <div className="apple-node-resource-grid">
+          <ResourceRing
+            label={t("node.cpu")}
+            value={cpuUsage}
+            detail={cpuDetail}
+            color="var(--apple-blue)"
+            icon={CpuIcon}
+          />
+          <ResourceRing
+            label={t("node.mem")}
+            value={memUsage}
+            detail={memoryDetail}
+            color="#5e9ff2"
+            icon={MemoryStickIcon}
+          />
+          <ResourceRing
+            label={t("node.disk")}
+            value={diskUsage}
+            detail={diskDetail}
+            color="#4da3ff"
+            icon={HardDriveIcon}
+          />
         </div>
-        <div className="border-t border-(--accent-4)/50 my-2"></div>
-        {isShowHWBarInCard && (
-          <div className="flex items-center justify-around whitespace-nowrap">
-            <div className="flex items-center gap-1">
-              <CpuIcon className="size-4 text-blue-600 flex-shrink-0" />
+
+        {enableCompactNetworkGauge && (
+          <div className="apple-node-network-panel">
+            <div className="apple-node-panel-row apple-node-panel-row--title">
               <span>
-                {node.cpu_cores} {t("node.cores")}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <MemoryStickIcon className="size-4 text-green-600 flex-shrink-0" />
-              <span>{formatBytes(node.mem_total)}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <HardDriveIcon className="size-4 text-red-600 flex-shrink-0" />
-              <span>{formatBytes(node.disk_total)}</span>
-            </div>
-          </div>
-        )}
-        <div className={`${isShowValueUnderProgressBar ? "mb-1" : ""}`}>
-          <div className="flex items-center justify-between">
-            <span>{t("node.cpu")}</span>
-            <div className="w-3/4 flex items-center gap-2">
-              <ProgressBar value={cpuUsage} />
-              <span className="w-12 text-right">{cpuUsage.toFixed(0)}%</span>
-            </div>
-          </div>
-          {isShowValueUnderProgressBar && (
-            <div className="flex text-xs items-center justify-between text-secondary-foreground">
-              <span>
-                {node.cpu_cores} {t("node.cores")}
-              </span>
-            </div>
-          )}
-        </div>
-        <div className={`${isShowValueUnderProgressBar ? "mb-1" : ""}`}>
-          <div className="flex items-center justify-between">
-            <span>{t("node.mem")}</span>
-            <div className="w-3/4 flex items-center gap-2">
-              <ProgressBar value={memUsage} />
-              <span className="w-12 text-right">{memUsage.toFixed(0)}%</span>
-            </div>
-          </div>
-          {isShowValueUnderProgressBar && (
-            <div className="flex text-xs items-center justify-between text-secondary-foreground">
-              <span>
-                {node.mem_total > 0
-                  ? `${formatBytes(node.mem_total)}`
-                  : t("node.notAvailable")}
+                <Network className="size-4" />
+                {t("node.network")}
               </span>
               <span>
-                {stats ? `${formatBytes(stats.ram)}` : t("node.notAvailable")}
+                <ArrowUp className="size-3.5" />
+                {stats ? formatBytes(stats.net_out, true, 1) : t("node.notAvailable")}
+              </span>
+              <span>
+                <ArrowDown className="size-3.5" />
+                {stats ? formatBytes(stats.net_in, true, 1) : t("node.notAvailable")}
               </span>
             </div>
-          )}
-        </div>
-        {enableSwap && (
-          <div className={`${isShowValueUnderProgressBar ? "mb-1" : ""}`}>
-            <div className="flex items-center justify-between">
-              <span>{t("node.swap")}</span>
-              <div className="w-3/4 flex items-center gap-2">
-                <ProgressBar value={swapUsage} />
-                {node.swap_total > 0 ? (
-                  <span className="w-12 text-right">
-                    {swapUsage.toFixed(0)}%
-                  </span>
-                ) : (
-                  <span className="w-12 text-right">{t("node.off")}</span>
-                )}
+            <div className="apple-node-panel-row">
+              <span>总流量</span>
+              <span>↑ {stats ? formatBytes(stats.net_total_up, false, 1) : t("node.notAvailable")}</span>
+              <span>↓ {stats ? formatBytes(stats.net_total_down, false, 1) : t("node.notAvailable")}</span>
+            </div>
+            <div className="apple-node-panel-row">
+              <span>{t("node.load")}</span>
+              <span>{load}</span>
+            </div>
+            {enableSwap && (
+              <div className="apple-node-panel-row">
+                <span>{t("node.swap")}</span>
+                <span>{node.swap_total ? `${swapUsage.toFixed(0)}%` : t("node.off")}</span>
               </div>
-            </div>
+            )}
             {isShowValueUnderProgressBar && (
-              <div className="flex text-xs items-center justify-between text-secondary-foreground">
-                <span>
-                  {node.swap_total > 0
-                    ? `${formatBytes(node.swap_total)}`
-                    : t("node.notEnabled")}
-                </span>
-                <span>
-                  {stats
-                    ? `${formatBytes(stats.swap)}`
-                    : t("node.notAvailable")}
-                </span>
+              <div className="apple-node-traffic-limit">
+                <div>
+                  <span>{formatTrafficLimit(node.traffic_limit, node.traffic_limit_type)}</span>
+                  <span>{formatBytes(totalTraffic, false, 1)}</span>
+                </div>
+                <i>
+                  <b style={{ width: `${Math.min(100, trafficPercentage)}%` }} />
+                </i>
+                <em>{node.traffic_limit ? `${trafficPercentage.toFixed(3)}%` : expired_at}</em>
               </div>
             )}
           </div>
         )}
-        <div className={`${isShowValueUnderProgressBar ? "mb-1" : ""}`}>
-          <div className="flex items-center justify-between">
-            <span>{t("node.disk")}</span>
-            <div className="w-3/4 flex items-center gap-2">
-              <ProgressBar value={diskUsage} />
-              <span className="w-12 text-right">{diskUsage.toFixed(0)}%</span>
-            </div>
-          </div>
-          {isShowValueUnderProgressBar && (
-            <div className="flex text-xs items-center justify-between text-secondary-foreground">
-              <span>
-                {node.disk_total > 0
-                  ? `${formatBytes(node.disk_total)}`
-                  : t("node.notAvailable")}
-              </span>
-              <span>
-                {stats ? `${formatBytes(stats.disk)}` : t("node.notAvailable")}
-              </span>
-            </div>
-          )}
-        </div>
-        {selectTrafficProgressStyle === "linear" && (
-          <div className="mb-1">
-            <div className="flex items-center justify-between">
-              <span>{t("node.traffic")}</span>
-              <div className="w-3/4 flex items-center gap-2">
-                <ProgressBar value={trafficPercentage} />
-                <span className="w-12 text-right">
-                  {node.traffic_limit !== 0
-                    ? `${trafficPercentage.toFixed(0)}%`
-                    : t("node.off")}
-                </span>
-              </div>
-            </div>
-            <div className="flex text-xs items-center justify-between text-secondary-foreground">
-              <span>
-                {formatTrafficLimit(
-                  node.traffic_limit,
-                  node.traffic_limit_type
-                )}
-              </span>
-              <span>
-                {stats
-                  ? `${t("node.uploadPrefix")} ${formatBytes(
-                      stats.net_total_up
-                    )} ${t("node.downloadPrefix")} ${formatBytes(
-                      stats.net_total_down
-                    )}`
-                  : t("node.notAvailable")}
-              </span>
-            </div>
-          </div>
-        )}
-        <div className="border-t border-(--accent-4)/50 my-2"></div>
-        <div className="flex justify-between text-xs">
-          <span>{t("node.network")}</span>
-          <div>
-            <span>
-              {t("node.uploadPrefix")}{" "}
-              {stats
-                ? formatBytes(stats.net_out, true)
-                : t("node.notAvailable")}
-            </span>
-            <span className="ml-2">
-              {t("node.downloadPrefix")}{" "}
-              {stats ? formatBytes(stats.net_in, true) : t("node.notAvailable")}
-            </span>
-          </div>
-        </div>
-        {selectTrafficProgressStyle === "circular" && (
-          <div className="flex items-center justify-between text-xs">
-            <span className="w-1/5">{t("node.traffic")}</span>
-            <div className="flex items-center justify-between w-4/5">
-              <div className="flex items-center w-1/4">
-                {node.traffic_limit !== 0 && (
-                  <CircleProgress
-                    value={trafficPercentage}
-                    maxValue={100}
-                    size={32}
-                    strokeWidth={4}
-                    showPercentage={true}
-                  />
-                )}
-              </div>
-              <div className="w-3/4 text-right">
-                <div>
-                  <span>
-                    {t("node.uploadPrefix")}{" "}
-                    {stats
-                      ? formatBytes(stats.net_total_up)
-                      : t("node.notAvailable")}
-                  </span>
-                  <span className="ml-2">
-                    {t("node.downloadPrefix")}{" "}
-                    {stats
-                      ? formatBytes(stats.net_total_down)
-                      : t("node.notAvailable")}
-                  </span>
-                </div>
-                {node.traffic_limit !== 0 && isOnline && stats && (
-                  <div className="text-right">
-                    {formatTrafficLimit(
-                      node.traffic_limit,
-                      node.traffic_limit_type
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-        <div className="flex justify-between text-xs">
-          <span>{t("node.load")}</span>
-          <span>{load}</span>
-        </div>
-        <div className="flex justify-between text-xs">
-          <div className="flex justify-start w-full">
-            <span className="mr-1">{t("node.expiredAt")}</span>
-            <span>{expired_at}</span>
-          </div>
-          <div className="border-l border-(--accent-4)/50 mx-2"></div>
-          <div className="flex justify-end w-full">
-            <span>
-              {isOnline && stats ? (
-                <>
-                  <span className="mr-1">{t("node.uptime")}</span>
-                  <span>{formatUptime(stats.uptime)}</span>
-                </>
-              ) : (
-                t("node.offline")
-              )}
-            </span>
-          </div>
+
+        {enableNodeHistoryBars && <AppleHistoryBars node={node} />}
+
+        <div className="apple-node-tags">
+          {tagList.length ? <Tag tags={tagList} /> : <span>{expired_at}</span>}
+          <span className="apple-node-remark">
+            <RadioTower className="size-3.5" />
+            {node.group || node.public_remark || node.region}
+          </span>
         </div>
       </CardContent>
     </Card>

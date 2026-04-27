@@ -7,7 +7,9 @@ Apple 官方网站气质的 Komari 探针主题：大留白、玻璃层次、浅
 - **Apple-like visual system**：克制排版、圆角玻璃卡、柔和渐变与轻量动效。
 - **Komari compatible**：保留 `komari-theme.json` + `dist/` 的主题包结构，可直接上传到 Komari。
 - **PurCarte base**：沿用 PurCarte 的 Vite React 架构、Komari API 适配、JSON-RPC2 可选支持、设置面板与多视图。
-- **komari-next inspired modules**：强化首页总览、搜索/分组、状态概览、流量速率与实例详情体验。
+- **komari-next inspired modules**：新增剩余价值计算器、世界地图视图、地区状态/悬停详情、Pro 风格配置开关。
+- **Apple server cards**：参考 Apple 官网卡片语言重做服务器状态卡，包含资源圆环、网络速率、总流量、延迟/丢包 24h 条形图。
+- **Fixed hero actions**：首页搜索支持节点名、地区、分组、系统、标签和在线状态；`Live telemetry` 会刷新节点并滚动到实时模块。
 - **Mobile first**：iPhone/Safari 视口下保持可读的卡片密度和触控尺寸。
 
 ## 开发

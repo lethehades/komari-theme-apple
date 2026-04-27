@@ -45,6 +45,12 @@ export interface ConfigOptions {
   selectTrafficProgressStyle: "circular" | "linear"; // 流量进度条样式
   enableListItemProgressBar: boolean; // 是否启用列表视图进度条
   customTexts: string; // 自定义UI文本
+  enableAppleDashboardModules: boolean; // 是否启用 Apple 仪表盘增强模块
+  enableWorldMap: boolean; // 是否启用世界地图视图
+  enableRemainingValueCalculator: boolean; // 是否启用剩余价值计算器
+  enableProCustomizationPanel: boolean; // 是否启用 Pro 自定义提示面板
+  enableNodeHistoryBars: boolean; // 是否启用节点历史条形图
+  enableCompactNetworkGauge: boolean; // 是否启用紧凑型网络速度仪表
 }
 
 // 默认配置值
@@ -97,6 +103,12 @@ export const DEFAULT_CONFIG: ConfigOptions = {
   selectTrafficProgressStyle: "linear",
   enableListItemProgressBar: true,
   customTexts: "",
+  enableAppleDashboardModules: true,
+  enableWorldMap: true,
+  enableRemainingValueCalculator: true,
+  enableProCustomizationPanel: true,
+  enableNodeHistoryBars: true,
+  enableCompactNetworkGauge: true,
 };
 // 定义颜色类型
 export type ColorType =
