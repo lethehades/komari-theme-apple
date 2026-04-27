@@ -187,7 +187,7 @@ export const StatsBar = (props: StatsBarProps) => {
   return (
     <Card
       className={cn(
-        "relative flex items-center text-primary my-4",
+        "apple-stats-bar relative flex items-center text-primary my-4",
         isMobile ? "text-xs p-2" : "text-sm px-4 min-w-[300px] min-h-[5rem]"
       )}>
       <div
