@@ -59,7 +59,6 @@ const HomePage: React.FC<HomePageProps> = ({
     enableAppleDashboardModules,
     enableWorldMap,
     enableRemainingValueCalculator,
-    enableProCustomizationPanel,
   } = useAppConfig();
   const { t } = useLocale();
 
@@ -124,7 +123,6 @@ const HomePage: React.FC<HomePageProps> = ({
           liveData={liveData}
           enableWorldMap={enableWorldMap}
           enableRemainingValueCalculator={enableRemainingValueCalculator}
-          enableProCustomizationPanel={enableProCustomizationPanel}
         />
       )}
 

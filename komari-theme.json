@@ -2,7 +2,7 @@
   "name": "Komari Theme Apple",
   "short": "apple",
   "description": "An Apple official website inspired Komari theme with refined glass panels, spacious layout, live telemetry cards, grouping, traffic and instance detail modules.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": "HM Y & Xiaoyan, based on PurCarte by Montia37",
   "url": "https://github.com/lethehades/komari-theme-apple",
   "preview": "preview.png",
@@ -369,14 +369,14 @@
         "name": "启用 Apple 仪表盘增强模块",
         "type": "switch",
         "default": true,
-        "help": "启用后在首页展示 Apple 风格的世界地图、剩余价值和 Pro 控制模块。"
+        "help": "启用后在首页展示 Apple 风格的世界地图和剩余价值模块；Pro 配置开关保留在主题设置内，不再单独显示首页说明卡。"
       },
       {
         "key": "enableWorldMap",
         "name": "启用仪表盘世界地图视图",
         "type": "switch",
         "default": true,
-        "help": "展示全球节点分布、区域在线状态和悬停详情。"
+        "help": "展示全球节点分布、区域在线状态和悬停详情；布局已收紧以减少地图卡片空白。"
       },
       {
         "key": "enableRemainingValueCalculator",
@@ -384,13 +384,6 @@
         "type": "switch",
         "default": true,
         "help": "根据节点价格、账期、到期时间估算剩余价值。"
-      },
-      {
-        "key": "enableProCustomizationPanel",
-        "name": "启用 Pro 风格自定义提示面板",
-        "type": "switch",
-        "default": true,
-        "help": "在首页展示已接入后端主题配置的 Apple Pro 风格模块提示。"
       },
       {
         "key": "enableCompactNetworkGauge",

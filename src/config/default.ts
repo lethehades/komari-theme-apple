@@ -48,7 +48,6 @@ export interface ConfigOptions {
   enableAppleDashboardModules: boolean; // 是否启用 Apple 仪表盘增强模块
   enableWorldMap: boolean; // 是否启用世界地图视图
   enableRemainingValueCalculator: boolean; // 是否启用剩余价值计算器
-  enableProCustomizationPanel: boolean; // 是否启用 Pro 自定义提示面板
   enableNodeHistoryBars: boolean; // 是否启用节点历史条形图
   enableCompactNetworkGauge: boolean; // 是否启用紧凑型网络速度仪表
 }
@@ -106,7 +105,6 @@ export const DEFAULT_CONFIG: ConfigOptions = {
   enableAppleDashboardModules: true,
   enableWorldMap: true,
   enableRemainingValueCalculator: true,
-  enableProCustomizationPanel: true,
   enableNodeHistoryBars: true,
   enableCompactNetworkGauge: true,
 };

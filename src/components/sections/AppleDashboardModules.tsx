@@ -1,7 +1,7 @@
 import { useMemo, useState, type CSSProperties, type PointerEvent } from "react";
 import { geoGraticule10, geoNaturalEarth1, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
-import { Calculator, MapPinned, Settings2, SlidersHorizontal, WalletCards } from "lucide-react";
+import { Calculator, MapPinned } from "lucide-react";
 import type { NodeData } from "@/types/node";
 import type { RpcNodeStatusMap } from "@/types/rpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,6 @@ interface AppleDashboardModulesProps {
   liveData: RpcNodeStatusMap | null;
   enableWorldMap: boolean;
   enableRemainingValueCalculator: boolean;
-  enableProCustomizationPanel: boolean;
 }
 
 const SVG_WIDTH = 1000;
@@ -248,49 +247,28 @@ function RemainingValueCard({ nodes }: { nodes: NodeData[] }) {
   );
 }
 
-function ProControlCard() {
-  return (
-    <Card className="apple-feature-card apple-pro-card">
-      <CardHeader className="apple-feature-card__header">
-        <div>
-          <div className="apple-feature-kicker">
-            <SlidersHorizontal className="size-4" />
-            Pro controls
-          </div>
-          <CardTitle className="apple-feature-title">Pro 风格自定义</CardTitle>
-          <p className="apple-feature-subtitle">这些模块已接入 Komari 后端主题配置，可在主题设置里按需开关。</p>
-        </div>
-      </CardHeader>
-      <CardContent className="apple-feature-card__content">
-        <div className="apple-pro-grid">
-          <span><Settings2 className="size-4" /> 世界地图视图</span>
-          <span><WalletCards className="size-4" /> 剩余价值计算器</span>
-          <span><MapPinned className="size-4" /> 区域悬停详情</span>
-          <span><SlidersHorizontal className="size-4" /> 节点历史条形图</span>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 export function AppleDashboardModules({
   nodes,
   liveData,
   enableWorldMap,
   enableRemainingValueCalculator,
-  enableProCustomizationPanel,
 }: AppleDashboardModulesProps) {
-  if (!enableWorldMap && !enableRemainingValueCalculator && !enableProCustomizationPanel) {
+  if (!enableWorldMap && !enableRemainingValueCalculator) {
     return null;
   }
 
+  const isSingleModule = !enableWorldMap || !enableRemainingValueCalculator;
+
   return (
-    <section id="apple-dashboard-modules" className="apple-dashboard-modules">
+    <section
+      id="apple-dashboard-modules"
+      className={`apple-dashboard-modules${isSingleModule ? " is-single-module" : ""}`}>
       {enableWorldMap && <AppleWorldMap nodes={nodes} liveData={liveData} />}
-      <div className="apple-dashboard-modules__side">
-        {enableRemainingValueCalculator && <RemainingValueCard nodes={nodes} />}
-        {enableProCustomizationPanel && <ProControlCard />}
-      </div>
+      {enableRemainingValueCalculator && (
+        <div className="apple-dashboard-modules__side">
+          <RemainingValueCard nodes={nodes} />
+        </div>
+      )}
     </section>
   );
 }

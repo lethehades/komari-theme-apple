@@ -460,14 +460,9 @@
 .apple-live-pill,
 .apple-metric-card,
 .theme-card-style {
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+  transition: box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
 }
 
-.apple-group-bar button:hover,
-.apple-navbar button:hover,
-.theme-card-style:hover {
-  transform: translateY(-1px);
-}
 
 .theme-card-style:hover {
   border-color: color-mix(in srgb, var(--apple-blue) 26%, var(--apple-border));
@@ -525,20 +520,32 @@ input {
 .apple-dashboard-modules {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(20rem, 0.85fr);
-  gap: 1rem;
-  margin: 1rem 0;
+  align-items: start;
+  gap: 0.85rem;
+  margin: 0.85rem 0 1rem;
+}
+
+.apple-dashboard-modules.is-single-module {
+  grid-template-columns: 1fr;
 }
 
 .apple-dashboard-modules__side {
   display: grid;
-  gap: 1rem;
+  align-self: start;
+  gap: 0.85rem;
 }
 
 .apple-feature-card {
+  align-self: start;
+  height: auto;
   overflow: hidden;
   background:
     linear-gradient(145deg, color-mix(in srgb, var(--card) 92%, transparent), color-mix(in srgb, var(--card) 70%, transparent)),
     radial-gradient(circle at 88% 12%, var(--apple-blue-soft), transparent 16rem) !important;
+}
+
+.apple-map-card {
+  height: auto;
 }
 
 .apple-feature-card__header {
@@ -547,7 +554,7 @@ input {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.2rem 1.25rem 0.75rem;
+  padding: 1rem 1.1rem 0.6rem;
 }
 
 .apple-feature-kicker {
@@ -594,7 +601,7 @@ input {
 }
 
 .apple-feature-card__content {
-  padding: 0.75rem 1.25rem 1.25rem;
+  padding: 0.55rem 1.1rem 1.1rem;
 }
 
 .apple-world-map {
@@ -610,7 +617,8 @@ input {
 .apple-world-map__svg {
   display: block;
   width: 100%;
-  min-height: 18rem;
+  height: auto;
+  min-height: 0;
 }
 
 .apple-world-map__ocean {
@@ -849,7 +857,6 @@ input {
 }
 
 .apple-live-pill:hover {
-  transform: translateY(-1px);
   background: color-mix(in srgb, var(--apple-blue-soft) 82%, white 8%);
 }
 
